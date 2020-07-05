@@ -1,5 +1,7 @@
 LootStats = LibStub("AceAddon-3.0"):NewAddon("LootStats", "AceConsole-3.0", "AceEvent-3.0")
 
+local LINELIMIT=10
+
 function LootStats:OnInitialize()
   self.seen = {}
   self.tsSeen = {}
@@ -191,8 +193,14 @@ function LootStats:ShowTooltip(tooltip)
     tooltip:AddDoubleLine('Money', GetCoinTextureString(loots.money))
   end
 
+  local count = 0
+
   for _, item in pairs(loots.sortedItems) do
     tooltip:AddDoubleLine(self:ItemLink(item[1]), item[2])
+    if count >= LINELIMIT then
+      break
+    end
+    count = count + 1
   end
   tooltip:Show()
 end
