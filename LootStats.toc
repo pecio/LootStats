@@ -1,0 +1,10 @@
+## Interface: 80300
+## Title: LootStats
+## Author: Pecio
+## Version: 0.2
+## SavedVariables: LootStatsDB
+## OptionalDeps: Ace3
+## X-Embeds: Ace3
+
+main.lua
+Common/common.xml
