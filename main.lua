@@ -36,7 +36,7 @@ function LootStats:OnInitialize()
     self:UpgradeDBVersion()
   end
 
-  GameTooltip:HookScript("OnTooltipSetUnit", function(self)
+  TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(self)
     LootStats:ShowTooltip(self)
   end)
 end
@@ -99,11 +99,11 @@ function LootStats:LOOT_READY()
           lootList[guid] = { items = {}, currencies = {} }
         end
       else -- count for source
-        if lsType == LOOT_SLOT_MONEY then
+        if lsType == Enum.LootSlotType.Money then
           lootList[guid].money = v -- coppers
-        elseif lsType == LOOT_SLOT_ITEM then
+        elseif lsType == Enum.LootSlotType.Item then
           lootList[guid].items[id] = v
-        elseif lsType == LOOT_SLOT_CURRENCY then
+        elseif lsType == Enum.LootSlotType.Currency then
           lootList[guid].currencies[id] = v
         end
       end
