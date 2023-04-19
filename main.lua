@@ -197,7 +197,7 @@ function LootStats:ShowTooltip(tooltip)
 
   for _, item in pairs(loots.sortedItems) do
     tooltip:AddDoubleLine(self:ItemLink(item[1]), item[2])
-    if count >= LINELIMIT then
+    if count > LINELIMIT then
       break
     end
     count = count + 1
