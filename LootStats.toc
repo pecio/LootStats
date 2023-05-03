@@ -1,7 +1,7 @@
-## Interface: 100007
+## Interface: 100100
 ## Title: LootStats
 ## Author: Pecio
-## Version: 0.4
+## Version: 0.5
 ## SavedVariables: LootStatsDB
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
