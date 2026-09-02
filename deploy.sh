@@ -1,5 +1,5 @@
 #!/bin/bash
-if [[ -x "/usr/bin/realpath" -a -x "/usr/bin/basename" ]]
+if [[ -x "/usr/bin/realpath" && -x "/usr/bin/basename" ]]
 then
   PROJECT="$(/usr/bin/basename "$(/usr/bin/realpath .)")"
 else
@@ -7,7 +7,7 @@ else
 fi
 if [[ -z "${WOW_HOME}" ]]
 then
-  if [[ "$(uname -s)" = "Linux" -a "$(uname -r | awk -F- '{ print $NF; }')" = "WSL2" ]] 
+  if [[ "$(uname -s)" = "Linux" && "$(uname -r | awk -F- '{ print $NF; }')" = "WSL2" ]] 
   then
     WOW_HOME="/mnt/c/Program Files (x86)/World of Warcraft/_retail_"
   elif [[ "$(uname -s)" = "Darwin" ]]
@@ -28,7 +28,7 @@ then
   exit 1
 fi
 
-if [[ -x "/usr/bin/realpath" -a "$(/usr/bin/realpath .)" = "${TARGET}" ]]
+if [[ -x "/usr/bin/realpath" && "$(/usr/bin/realpath .)" = "${TARGET}" ]]
 then
   echo "Nothing to do, already at ${TARGET}" >&2
   exit 0
