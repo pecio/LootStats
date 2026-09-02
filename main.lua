@@ -89,14 +89,13 @@ function LootStats:LOOT_READY()
     local lootList = {} -- to be indexed by guid
 
     for slot = 1, numItems do
-        local lootIcon, lootName, lootQuantity, lootQuality, locked, isQuestItem, questID, isActive = GetLootSlotInfo(
-            slot)
+        local lootIcon, lootName, lootQuantity, lootQuality, locked, isQuestItem, questID, isActive, isCoin = GetLootSlotInfo(slot)
         local lsType = GetLootSlotType(slot)
 
         local id
         local link = GetLootSlotLink(slot)
         if link then
-            _, _, id = string.find(link, "|cff%x+|H%a+:(%d+)")
+            id = self:ItemId(link)
             self.db.global.itemNames[id] = lootName
             self.db.global.itemLinks[id] = link
         end
@@ -274,4 +273,11 @@ function LootStats:UNIT_SPELLCAST_SUCCEEDED(event, unit, name, rank, lineId, spe
     if spellId == 192125 then -- Skinning
         self.skinning = true
     end
+end
+
+function LootStats:ItemId(link)
+    -- Stolen from https://warcraft.wiki.gg/wiki/ItemLink
+    local _, linkOptions = LinkUtil.ExtractLink(link)
+    local item = {strsplit(":", linkOptions)}
+    return tonumber(item[1])
 end
