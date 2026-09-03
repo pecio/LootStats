@@ -34,7 +34,8 @@ then
   exit 0
 fi
 
-/usr/bin/rsync -av --exclude .git \
+/usr/bin/rsync -rtv --exclude .git \
 	--exclude .gitignore \
 	--exclude deploy.sh \
+  --delete \
 	./ "${TARGET}/"
