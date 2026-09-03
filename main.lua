@@ -52,7 +52,7 @@ end
 
 function LootStats:LOOT_READY()
     local guid = UnitGUID("target")
-    if not guid then
+    if not guid or issecretvalue(guid) then
         return
     end
 
@@ -191,6 +191,11 @@ end
 function LootStats:ShowTooltip(tooltip)
     local name, unit = tooltip:GetUnit()
 
+    -- Do not show tooltip when receiving a secret value.
+    -- Seems to occur in dungeons.
+    if issecretvalue(unit) then
+        return
+    end
     if not unit then
         return
     end
