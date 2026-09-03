@@ -7,23 +7,17 @@ function LootStats:OnInitialize()
     self.tsSeen = {}
     local cleanDB = {
         global = {
-            version = 2,
+            version = 1,
             loots = {
                 ['*'] = {
                     count = 0,
                     money = 0,
                     items = {},
                     currencies = {},
-                    sortedItems = {},
-                    sortedCurrencies = {},
                     skinned = {},
-                    sortedSkinned = {},
                     mined = {},
-                    sortedMined = {},
                     herbed = {},
-                    sortedHerbed = {},
-                    engineered = {},
-                    sortedEngineered = {}
+                    engineered = {}
                 }
             },
             itemNames = {},
@@ -144,15 +138,8 @@ function LootStats:Push(guid, loot)
     for itemId, amount in pairs(loot.items) do
         if not loots.items[itemId] then
             loots.items[itemId] = amount
-            table.insert(loots.sortedItems, {itemId, amount})
         else
             loots.items[itemId] = loots.items[itemId] + amount
-            for i, item in pairs(loots.sortedItems) do
-                if item[1] == itemId then
-                    item[2] = loots.items[itemId]
-                    break
-                end
-            end
         end -- loots.items[itemId]
     end
 
@@ -160,15 +147,8 @@ function LootStats:Push(guid, loot)
     for currencyId, amount in pairs(loot.currencies) do
         if not loots.currencies[currencyId] then
             loots.currencies[currencyId] = amount
-            table.insert(loots.sortedCurrencies, {currencyId, amount})
         else
             loots.currencies[currencyId] = loots.currencies[currencyId] + amount
-            for i, curr in pairs(loots.sortedCurrencies) do
-                if curr[1] == currencyId then
-                    curr[2] = loots.currencies[currencyId]
-                    break
-                end
-            end
         end -- loots.currencies[currencyId]
     end
 
@@ -176,9 +156,6 @@ function LootStats:Push(guid, loot)
     local function compareValue(a, b)
         return a[2] > b[2]
     end
-
-    table.sort(loots.sortedItems, compareValue)
-    table.sort(loots.sortedCurrencies, compareValue)
 end
 
 function LootStats:GUIDtoID(guid)
@@ -219,8 +196,12 @@ function LootStats:ShowTooltip(tooltip)
     end
 
     local count = 0
-
-    for _, item in pairs(loots.sortedItems) do
+    local sortedItems = {}
+    for k, v in pairs(loots.items) do
+        table.insert(sortedItems, {k, v})
+    end
+    table.sort(sortedItems, function(a, b) return a[2] > b[2] end)
+    for _, item in pairs(sortedItems) do
         if count >= LINELIMIT then
             break
         end
@@ -247,27 +228,7 @@ function LootStats:ItemLink(guid)
 end
 
 function LootStats:UpgradeDBVersion()
-    if self.db.global.version == 1 then
-        self:Print("Upgrading DB to version 2")
-        -- Compute sorted lists
-        local function compareValue(a, b)
-            return a[2] > b[2]
-        end
-        for guid, loot in pairs(self.db.global.loots) do
-            loot.sortedItems = {}
-            for guid, amount in pairs(loot.items) do
-                table.insert(loot.sortedItems, {guid, amount})
-            end
-            table.sort(loot.sortedItems, compareValue)
-
-            loot.sortedCurrencies = {}
-            for guid, amount in pairs(loot.currencies) do
-                table.insert(loot.sortedCurrencies, {guid, amount})
-            end
-            table.sort(loot.sortedCurrencies, compareValue)
-        end
-    end
-    self.db.global.version = 2
+    self.db.global.version = 1
 end
 
 function LootStats:UNIT_SPELLCAST_SUCCEEDED(event, unit, name, rank, lineId, spellId)
