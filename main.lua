@@ -21,17 +21,26 @@ function LootStats:OnInitialize()
                 }
             },
             itemNames = {},
-            itemLinks = {}
+            itemLinks = {},
+            itemToMob = {
+                ['*'] = {  -- ItemId
+                    ['*'] = 0  -- NPCId -> count
+                }
+            }
         }
     }
     self.db = LibStub("AceDB-3.0"):New("LootStatsDB", cleanDB)
 
-    if self.db.global.version < 2 then
+    if not self.db.global.version or self.db.global.version < 2 then
         self:UpgradeDBVersion()
     end
 
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(self)
         LootStats:ShowTooltip(self)
+    end)
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip)
+        LootStats:ItemTooltip(tooltip)
+        tooltip:Show()
     end)
 end
 
@@ -141,6 +150,8 @@ function LootStats:Push(guid, loot)
         else
             loots.items[itemId] = loots.items[itemId] + amount
         end -- loots.items[itemId]
+        -- The data in the item-to-mob table must match the data in the mob-to-item one
+        self.db.global.itemToMob[itemId][id] = loots.items[itemId]
     end
 
     -- iterate through currencies
@@ -150,11 +161,6 @@ function LootStats:Push(guid, loot)
         else
             loots.currencies[currencyId] = loots.currencies[currencyId] + amount
         end -- loots.currencies[currencyId]
-    end
-
-    -- sort tables
-    local function compareValue(a, b)
-        return a[2] > b[2]
     end
 end
 
@@ -228,7 +234,17 @@ function LootStats:ItemLink(guid)
 end
 
 function LootStats:UpgradeDBVersion()
-    self.db.global.version = 1
+    -- 1 to 2: Add itemToMob associative table
+    LootStats:Print("Upgrading DB")
+    for npcId, npcData in pairs(self.db.global.loots) do
+        if npcData.items then
+            for itemId, count in pairs(npcData.items) do
+                self.db.global.itemToMob[itemId][npcId] = count
+            end
+        end
+    end
+    self.db.global.version = 2
+    LootStats:Printf("DB is now version %d", self.db.global.version)
 end
 
 function LootStats:UNIT_SPELLCAST_SUCCEEDED(event, unit, name, rank, lineId, spellId)
@@ -246,4 +262,70 @@ function LootStats:ItemId(link)
     local _, linkOptions = LinkUtil.ExtractLink(link)
     local item = {strsplit(":", linkOptions)}
     return tonumber(item[1])
+end
+
+function LootStats:ItemTooltip(tooltip)
+    local tooltipData = tooltip:GetTooltipData()
+    if not tooltipData then return end
+
+    local itemId = tooltipData.id
+    if not itemId then return end
+
+    local loots = self.db.global.itemToMob[itemId]
+    if not loots or next(loots) == nil then return end
+
+    -- Get total and build table for sorting
+    local lootTable = {}
+    local total = 0
+    for npcId, amount in pairs(loots) do
+        -- We insert names directly
+        local times = LootStats:npcCount(npcId)
+        table.insert(lootTable, {
+            ["name"] = LootStats:npcName(npcId),
+            ["times"] = times,
+            ["amount"] = amount,
+            ["pct"] = (100 * amount) / times
+        })
+        total = total + amount
+    end
+
+    -- Show total
+    tooltip:AddLine(string.format("Looted |cffffffff%d|r times", total))
+
+    -- Sort table
+    table.sort(lootTable, function(a, b)
+        -- We sort by percentaje descending and, for equal values, by mob name ascending
+        if a.pct == b.pct then
+            return a.name < b.name
+        end
+        return a.pct > b.pct
+    end)
+
+    local count = 0
+    for _, item in pairs(lootTable) do
+        if IsShiftKeyDown() then
+            tooltip:AddDoubleLine(item.name, string.format("%.2f|cffffffff%%|r (%d/%d)", item.pct, item.amount, item.times))
+        else
+            tooltip:AddDoubleLine(item.name, string.format("%.2f|cffffffff%%|r", item.pct))
+        end
+        count = count + 1
+        if count >= LINELIMIT then
+            break
+        end
+    end
+end
+
+function LootStats:npcName(npcId)
+    if self.db.global.loots[npcId] and self.db.global.loots[npcId].name then
+        return self.db.global.loots[npcId].name
+    end
+    return string.format("npc-%d", npcId)
+end
+
+function LootStats:npcCount(npcId)
+    -- Returns the number of times a mob kind has been looted
+    if self.db.global.loots[npcId] and self.db.global.loots[npcId].count then
+        return self.db.global.loots[npcId].count
+    end
+    return 0
 end
