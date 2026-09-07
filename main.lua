@@ -35,8 +35,9 @@ function LootStats:OnInitialize()
         self:UpgradeDBVersion()
     end
 
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(self)
-        LootStats:ShowTooltip(self)
+    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
+        LootStats:MobTooltip(tooltip)
+        tooltip:Show()
     end)
     TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip)
         LootStats:ItemTooltip(tooltip)
@@ -171,7 +172,7 @@ function LootStats:GUIDtoID(guid)
     return tonumber(id)
 end
 
-function LootStats:ShowTooltip(tooltip)
+function LootStats:MobTooltip(tooltip)
     local name, unit = tooltip:GetUnit()
 
     -- Do not show tooltip when receiving a secret value.
@@ -195,7 +196,7 @@ function LootStats:ShowTooltip(tooltip)
 
     loots.name = GetUnitName(unit)
 
-    tooltip:AddLine('Looted ' .. loots.count .. ' times')
+    tooltip:AddLine(string.format("Looted |cffffffff%d|r times", loots.count))
 
     if loots.money > 0 then
         tooltip:AddDoubleLine('Money', GetCoinTextureString(loots.money))
@@ -214,7 +215,6 @@ function LootStats:ShowTooltip(tooltip)
         tooltip:AddDoubleLine(self:ItemLink(item[1]), item[2])
         count = count + 1
     end
-    tooltip:Show()
 end
 
 function LootStats:ItemName(guid)
