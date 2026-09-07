@@ -1,10 +1,23 @@
 ## Interface: 120100
 ## Title: LootStats
 ## Author: Pecio
-## Version: 0.8
+## Version: 0.8.1
 ## SavedVariables: LootStatsDB
 ## OptionalDeps: Ace3
 ## X-Embeds: Ace3
+## IconTexture: Interface\Icons\inv_misc_bag_10
+## Notes: Records and shows your looting statistics on NPCs and Items.
+## Category: Loot
+## Category-deDE: Beute
+## Category-esES: Botín
+## Category-esMX: Botín
+## Category-frFR: Butin 
+## Category-itIT: Bottino
+## Category-koKR: 전리품
+## Category-ptBR: Saque
+## Category-ruRU: Добыча
+## Category-zhCN: 战利品
+## Category-zhTW: 戰利品
 
 Common\common.xml
 main.lua
