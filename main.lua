@@ -35,14 +35,27 @@ function LootStats:OnInitialize()
         self:UpgradeDBVersion()
     end
 
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
-        LootStats:MobTooltip(tooltip)
-        tooltip:Show()
-    end)
-    TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip)
-        LootStats:ItemTooltip(tooltip)
-        tooltip:Show()
-    end)
+    if TooltipDataProcessor then
+        -- Modern API
+        TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
+            LootStats:MobTooltip(tooltip)
+            tooltip:Show()
+        end)
+        TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip)
+            LootStats:ItemTooltip(tooltip)
+            tooltip:Show()
+        end)
+    else
+        -- Classic API
+        GameTooltip:HookScript("OnTooltipSetUnit", function(tooltip)
+            LootStats:MobTooltip(tooltip)
+            tooltip:Show()
+        end)
+        GameTooltip:HookScript("OnTooltipSetItem", function(tooltip)
+            LootStats:ItemTooltip(tooltip)
+            tooltip:Show()
+        end)
+    end
 end
 
 function LootStats:OnEnable()
@@ -100,8 +113,12 @@ function LootStats:LOOT_READY()
         local link = GetLootSlotLink(slot)
         if link then
             id = self:ItemId(link)
-            self.db.global.itemNames[id] = lootName
-            self.db.global.itemLinks[id] = link
+            if id then
+                self.db.global.itemNames[id] = lootName
+                self.db.global.itemLinks[id] = link
+            else
+                return
+            end
         end
 
         local sources = {GetLootSourceInfo(slot)}
@@ -258,17 +275,25 @@ function LootStats:UNIT_SPELLCAST_SUCCEEDED(event, unit, name, rank, lineId, spe
 end
 
 function LootStats:ItemId(link)
-    -- Stolen from https://warcraft.wiki.gg/wiki/ItemLink
-    local _, linkOptions = LinkUtil.ExtractLink(link)
-    local item = {strsplit(":", linkOptions)}
-    return tonumber(item[1])
+    -- See https://warcraft.wiki.gg/wiki/ItemLink but see below
+    local _, second, third = strsplit(":", link)
+    -- In Classic, itemId is second, in Modern, it's third
+    -- In Modern, there is a colon between "|cnIQn" and "|Hitem";
+    -- LinkUtil:ExtractLink converts Modern to Classic, but we do not need it
+    local itemId = tonumber(second)
+    if itemId then
+        return itemId
+    else
+        return tonumber(third)
+    end
 end
 
 function LootStats:ItemTooltip(tooltip)
-    local tooltipData = tooltip:GetTooltipData()
-    if not tooltipData then return end
+    -- Get item ID from tooltip
+    local _, itemLink = tooltip:GetItem()
+    if not itemLink then return end
 
-    local itemId = tooltipData.id
+    local itemId = LootStats:ItemId(itemLink)
     if not itemId then return end
 
     local loots = self.db.global.itemToMob[itemId]
