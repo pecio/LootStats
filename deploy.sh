@@ -43,7 +43,7 @@ for EDITION in "${WOW_HOME}"/_*_; do
       --exclude .gitignore \
       --exclude deploy.sh \
       --delete \
-      ./ "${TARGET}/" | sed -e "s!^[>.][a-z.+]* !${TARGET}/!"
+      ./ "${TARGET}/" | sed -e "s!^[>.c][a-z.+]* !${TARGET}/!"
   else
    echo "No AddOns directory found in ${EDITION}" >&2
   fi
