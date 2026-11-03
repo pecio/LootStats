@@ -38,24 +38,20 @@ function LootStats:OnInitialize()
     -- Check Interface Version (Forever and Dragonflight or later have Modern API)
     _, _, _, interfaceVersion = GetBuildInfo()
     if (interfaceVersion >= 16001 and interfaceVersion < 20000) or interfaceVersion >= 100002 then
-        -- Modern API
+        -- Modern Tooltip API
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
             LootStats:MobTooltip(tooltip)
-            tooltip:Show()
         end)
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Item, function(tooltip)
             LootStats:ItemTooltip(tooltip)
-            tooltip:Show()
         end)
     else
-        -- Classic API
+        -- Classic Tooltip API
         GameTooltip:HookScript("OnTooltipSetUnit", function(tooltip)
             LootStats:MobTooltip(tooltip)
-            tooltip:Show()
         end)
         GameTooltip:HookScript("OnTooltipSetItem", function(tooltip)
             LootStats:ItemTooltip(tooltip)
-            tooltip:Show()
         end)
     end
 end
