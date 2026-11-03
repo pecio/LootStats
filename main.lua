@@ -35,7 +35,9 @@ function LootStats:OnInitialize()
         self:UpgradeDBVersion()
     end
 
-    if TooltipDataProcessor then
+    -- Check Interface Version (Forever and Dragonflight or later have Modern API)
+    _, _, _, interfaceVersion = GetBuildInfo()
+    if (interfaceVersion >= 16001 and interfaceVersion < 20000) or interfaceVersion >= 100002 then
         -- Modern API
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
             LootStats:MobTooltip(tooltip)
