@@ -214,7 +214,7 @@ function LootStats:MobTooltip(tooltip)
     tooltip:AddLine(string.format("Looted |cffffffff%d|r times", loots.count))
 
     if loots.money > 0 then
-        tooltip:AddDoubleLine('Money', GetCoinTextureString(loots.money))
+        tooltip:AddDoubleLine('Money', C_CurrencyInfo.GetCoinTextureString(loots.money))
     end
 
     local count = 0
