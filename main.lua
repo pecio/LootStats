@@ -36,7 +36,7 @@ function LootStats:OnInitialize()
     end
 
     -- Check Interface Version (Forever and Dragonflight or later have Modern API)
-    _, _, _, interfaceVersion = GetBuildInfo()
+    local _, _, _, interfaceVersion = GetBuildInfo()
     if (interfaceVersion >= 16001 and interfaceVersion < 20000) or interfaceVersion >= 100002 then
         -- Modern Tooltip API
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Unit, function(tooltip)
@@ -62,7 +62,7 @@ function LootStats:OnEnable()
 end
 
 function LootStats:OnDisable()
-
+    -- No cleanup needed
 end
 
 function LootStats:LOOT_READY()
@@ -84,11 +84,6 @@ function LootStats:LOOT_READY()
         self.seen[guid] = true
     end
 
-    local name = UnitName("target")
-    if not name then
-        return
-    end
-
     if not UnitCanAttack("player", "target") then
         return
     end
@@ -100,7 +95,6 @@ function LootStats:LOOT_READY()
     end
 
     local numItems = GetNumLootItems()
-    local slot
     local lootList = {} -- to be indexed by guid
 
     for slot = 1, numItems do
@@ -161,22 +155,14 @@ function LootStats:Push(guid, loot)
 
     -- iterate through items
     for itemId, amount in pairs(loot.items) do
-        if not loots.items[itemId] then
-            loots.items[itemId] = amount
-        else
-            loots.items[itemId] = loots.items[itemId] + amount
-        end -- loots.items[itemId]
+        loots.items[itemId] = (loots.items[itemId] or 0) + amount
         -- The data in the item-to-mob table must match the data in the mob-to-item one
         self.db.global.itemToMob[itemId][id] = loots.items[itemId]
     end
 
     -- iterate through currencies
     for currencyId, amount in pairs(loot.currencies) do
-        if not loots.currencies[currencyId] then
-            loots.currencies[currencyId] = amount
-        else
-            loots.currencies[currencyId] = loots.currencies[currencyId] + amount
-        end -- loots.currencies[currencyId]
+        loots.currencies[currencyId] = (loots.currencies[currencyId] or 0) + amount
     end
 end
 
@@ -188,7 +174,7 @@ function LootStats:GUIDtoID(guid)
 end
 
 function LootStats:MobTooltip(tooltip)
-    local name, unit = tooltip:GetUnit()
+    local _, unit = tooltip:GetUnit()
 
     -- Do not show tooltip when receiving a secret value.
     -- Seems to occur in dungeons.
@@ -233,24 +219,16 @@ function LootStats:MobTooltip(tooltip)
 end
 
 function LootStats:ItemName(guid)
-    if self.db.global.itemNames[guid] then
-        return self.db.global.itemNames[guid]
-    else
-        return guid
-    end
+    return self.db.global.itemNames[guid] or guid
 end
 
 function LootStats:ItemLink(guid)
-    if self.db.global.itemLinks[guid] then
-        return self.db.global.itemLinks[guid]
-    else
-        return self:ItemName(guid)
-    end
+    return self.db.global.itemLinks[guid] or self:ItemName(guid)
 end
 
 function LootStats:UpgradeDBVersion()
     -- 1 to 2: Add itemToMob associative table
-    LootStats:Print("Upgrading DB")
+    self:Print("Upgrading DB")
     for npcId, npcData in pairs(self.db.global.loots) do
         if npcData.items then
             for itemId, count in pairs(npcData.items) do
@@ -259,14 +237,14 @@ function LootStats:UpgradeDBVersion()
         end
     end
     self.db.global.version = 2
-    LootStats:Printf("DB is now version %d", self.db.global.version)
+    self:Printf("DB is now version %d", self.db.global.version)
 end
 
 function LootStats:UNIT_SPELLCAST_SUCCEEDED(event, unit, name, rank, lineId, spellId)
-    if not unit == player then
+    -- Note: event, name, rank, lineId are unused parameters required by the event signature
+    if unit ~= player then
         return
     end
-    --  self:Print(string.format("%s (%d/%d)", name, lineId, spellId))
     if spellId == 192125 then -- Skinning
         self.skinning = true
     end
@@ -281,30 +259,36 @@ function LootStats:ItemId(link)
     local itemId = tonumber(second)
     if itemId then
         return itemId
-    else
-        return tonumber(third)
     end
+    return tonumber(third)
 end
 
 function LootStats:ItemTooltip(tooltip)
     -- Get item ID from tooltip
-    local _, itemLink = tooltip:GetItem()
-    if not itemLink then return end
+    local itemId
+    if tooltip.GetItem then
+        local _, itemLink = tooltip:GetItem()
+        itemId = self:ItemId(itemLink)
+    else
+        local tooltipData = tooltip:GetTooltipData()
+        itemId = tooltipData.id
+    end
 
-    local itemId = LootStats:ItemId(itemLink)
     if not itemId then return end
 
     local loots = self.db.global.itemToMob[itemId]
-    if not loots or next(loots) == nil then return end
+    if not loots or next(loots) == nil then
+        return
+    end
 
     -- Get total and build table for sorting
     local lootTable = {}
     local total = 0
     for npcId, amount in pairs(loots) do
         -- We insert names directly
-        local times = LootStats:npcCount(npcId)
+        local times = self:npcCount(npcId)
         table.insert(lootTable, {
-            ["name"] = LootStats:npcName(npcId),
+            ["name"] = self:npcName(npcId),
             ["times"] = times,
             ["amount"] = amount,
             ["pct"] = (100 * amount) / times
@@ -339,16 +323,18 @@ function LootStats:ItemTooltip(tooltip)
 end
 
 function LootStats:npcName(npcId)
-    if self.db.global.loots[npcId] and self.db.global.loots[npcId].name then
-        return self.db.global.loots[npcId].name
+    local loots = self.db.global.loots[npcId]
+    if loots and loots.name then
+        return loots.name
     end
     return string.format("npc-%d", npcId)
 end
 
 function LootStats:npcCount(npcId)
     -- Returns the number of times a mob kind has been looted
-    if self.db.global.loots[npcId] and self.db.global.loots[npcId].count then
-        return self.db.global.loots[npcId].count
+    local loots = self.db.global.loots[npcId]
+    if loots and loots.count then
+        return loots.count
     end
     return 0
 end
