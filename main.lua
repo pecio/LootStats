@@ -251,6 +251,10 @@ function LootStats:UNIT_SPELLCAST_SUCCEEDED(event, unit, name, rank, lineId, spe
 end
 
 function LootStats:ItemId(link)
+    if not link then
+        -- Usually when clicking on chat links, the link is nil
+        return nil
+    end
     -- See https://warcraft.wiki.gg/wiki/ItemLink but see below
     local _, second, third = strsplit(":", link)
     -- In Classic, itemId is second, in Modern, it's third
