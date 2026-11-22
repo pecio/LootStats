@@ -208,7 +208,18 @@ function LootStats:MobTooltip(tooltip)
     for k, v in pairs(loots.items) do
         table.insert(sortedItems, {k, v})
     end
-    table.sort(sortedItems, function(a, b) return a[2] > b[2] end)
+    table.sort(sortedItems, function(a, b)
+        if a[2] ~= b[2] then  -- If quantities differ, it is easy
+            return a[2] > b[2]
+        end
+        qa = self:quality(a[1])
+        qb = self:quality(b[1])
+        if qa ~= qb then      -- Otherwise, sort by quality
+            return qa > qb
+        end
+                              -- Use name as a last resort
+        return self:ItemName(a[1]) < self:ItemName(b[1])
+    end)
     for _, item in pairs(sortedItems) do
         if count >= LINELIMIT then
             break
@@ -341,4 +352,12 @@ function LootStats:npcCount(npcId)
         return loots.count
     end
     return 0
+end
+
+function LootStats:quality(itemId)
+    itemName, itemLink, itemQuality = C_Item.GetItemInfo(itemId)
+    if not itemQuality then
+        return 0
+    end
+    return itemQuality
 end
